@@ -57,7 +57,14 @@ The application consists of two main components:
 npm run dev
 ```
 
-This will start the application in development mode with hot reloading enabled.
+This will start the application in development mode with:
+- Hot reloading enabled for both frontend and backend
+- Detailed debug logs and error messages
+- No CPU or memory restrictions for easier debugging
+- Source maps enabled
+- Development-specific environment variables
+- Nodemon for automatic server restarts
+- Next.js development server with Fast Refresh
 
 #### Production Mode
 
@@ -65,7 +72,17 @@ This will start the application in development mode with hot reloading enabled.
 npm run prod
 ```
 
-This will start the application in production mode with optimized builds.
+This will start the application in production mode with:
+- Optimized builds and minified assets
+- Reduced logging (errors only)
+- Resource limits:
+  - Backend: 800MB memory limit, optimized garbage collection
+  - Frontend: Standalone output optimization
+  - Redis: 512MB memory limit
+- Production-specific environment variables
+- Enhanced security measures
+- Disabled development tools and debugging features
+- Optimized Node.js flags for better performance
 
 ### Usage
 
