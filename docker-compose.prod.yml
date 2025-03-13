@@ -1,0 +1,126 @@
+version: '3'
+
+services:
+  frontend:
+    container_name: media_scraper_frontend_prod
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:3001/api
+      - NEXT_PUBLIC_INTERNAL_API_URL=http://backend:3001/api
+      - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 200M
+        reservations:
+          cpus: '0.1'
+          memory: 100M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+    networks:
+      - app-network
+
+  backend:
+    container_name: media_scraper_backend_prod
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - JWT_SECRET=${JWT_SECRET}
+      - DB_HOST=mysql
+      - DB_USER=root
+      - DB_PASS=${DB_PASSWORD}
+      - DB_NAME=media_scraper_prod
+      - REDIS_URL=redis://redis:6379
+      - NODE_ENV=production
+      - QUEUE_CONCURRENCY=5
+      - BATCH_SIZE=100
+      - MAX_MEMORY_USAGE=300
+      - LOG_LEVEL=error
+    depends_on:
+      - mysql
+      - redis
+    deploy:
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 300M
+        reservations:
+          cpus: '0.2'
+          memory: 200M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+    command: ["node", "--optimize-for-size", "--max-old-space-size=300", "server.js"]
+    networks:
+      - app-network
+
+  mysql:
+    image: mysql:8
+    container_name: media_scraper_mysql_prod
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
+      - MYSQL_DATABASE=media_scraper_prod
+      - MYSQL_INNODB_BUFFER_POOL_SIZE=268435456
+      - MYSQL_MAX_CONNECTIONS=100
+    ports:
+      - "3306:3306"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.3'
+          memory: 300M
+        reservations:
+          cpus: '0.2'
+          memory: 200M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+    volumes:
+      - mysql_data_prod:/var/lib/mysql
+    networks:
+      - app-network
+
+  redis:
+    image: redis:alpine
+    container_name: media_scraper_redis_prod
+    command: redis-server --maxmemory 200mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.2'
+          memory: 200M
+        reservations:
+          cpus: '0.1'
+          memory: 100M
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+    volumes:
+      - redis_data_prod:/data
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mysql_data_prod:
+  redis_data_prod:

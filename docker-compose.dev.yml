@@ -1,0 +1,84 @@
+services:
+  frontend:
+    extends:
+      file: docker-compose.base.yml
+      service: frontend
+    container_name: media_scraper_frontend_dev
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:3001/api
+      - NEXT_PUBLIC_INTERNAL_API_URL=http://backend:3001/api
+      - NODE_ENV=development
+      - WATCHPACK_POLLING=true
+      - NEXT_WEBPACK_USEPOLLING=true
+      - NEXT_PUBLIC_ENABLE_DEBUG=true
+    volumes:
+      - ./frontend:/app:delegated
+      - frontend_node_modules_dev:/app/node_modules
+      - frontend_next_dev:/app/.next
+
+  backend:
+    extends:
+      file: docker-compose.base.yml
+      service: backend
+    container_name: media_scraper_backend_dev
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - JWT_SECRET=dev-secret-key
+      - DB_HOST=mysql
+      - DB_USER=root
+      - DB_PASS=root
+      - DB_NAME=media_scraper_dev
+      - REDIS_URL=redis://redis:6379
+      - NODE_ENV=development
+      - QUEUE_CONCURRENCY=1
+      - BATCH_SIZE=10
+      - MAX_MEMORY_USAGE=500
+      - DEBUG=true
+      - LOG_LEVEL=debug
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - /app/logs
+    command: ["npm", "run", "dev"]
+
+  mysql:
+    extends:
+      file: docker-compose.base.yml
+      service: mysql
+    container_name: media_scraper_mysql_dev
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: media_scraper_dev
+      MYSQL_INNODB_BUFFER_POOL_SIZE: 134217728 # 128MB
+      MYSQL_MAX_CONNECTIONS: 50
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data_dev:/var/lib/mysql
+
+  redis:
+    extends:
+      file: docker-compose.base.yml
+      service: redis
+    container_name: media_scraper_redis_dev
+    command: redis-server --maxmemory 100mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data_dev:/data
+
+volumes:
+  mysql_data_dev:
+  redis_data_dev:
+  frontend_node_modules_dev:
+  frontend_next_dev:

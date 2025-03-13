@@ -1,0 +1,22 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install production dependencies only
+RUN npm ci --only=production
+
+# Copy the rest of the application
+COPY . .
+
+# Create logs directory
+RUN mkdir -p logs
+
+# Set production environment and optimize Node.js settings
+ENV NODE_ENV=production
+ENV LOG_LEVEL=error
+
+# Start the application with optimized settings
+CMD ["node", "--optimize-for-size", "--max-old-space-size=800", "--gc-interval=100", "server.js"]

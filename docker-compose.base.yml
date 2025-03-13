@@ -1,0 +1,44 @@
+x-base-service: &base-service
+  restart: unless-stopped
+  healthcheck:
+    interval: 30s
+    timeout: 10s
+    retries: 3
+  networks:
+    - app-network
+
+services:
+  frontend:
+    <<: *base-service
+    depends_on:
+      - backend
+
+  backend:
+    <<: *base-service
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  mysql:
+    <<: *base-service
+    image: mysql:8.0
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    <<: *base-service
+    image: redis:alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  app-network:
+    driver: bridge
